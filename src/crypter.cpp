@@ -18,7 +18,6 @@ crypter::crypter()
 std::basic_string<uint8_t> crypter::encrypt(std::basic_string<uint8_t> const& in_str)
 {
     std::basic_string<uint8_t> out_str;
-    size_t outlen;
 
     if (!_ctx) {
         std::cerr << "EVP_PKEY_CTX_new failed" << std::endl;
@@ -34,7 +33,7 @@ std::basic_string<uint8_t> crypter::encrypt(std::basic_string<uint8_t> const& in
         return out_str;
     }
 
-    /* Determine buffer length */
+    size_t outlen;
     if (EVP_PKEY_encrypt(_ctx, NULL, &outlen, in_str.c_str(), in_str.size()) <= 0) {
         std::cerr << "EVP_PKEY_encrypt failed" << std::endl;
         return out_str;
@@ -45,7 +44,6 @@ std::basic_string<uint8_t> crypter::encrypt(std::basic_string<uint8_t> const& in
     };
 
     auto out = std::unique_ptr<uint8_t, decltype(openssl_deleter)>((uint8_t*)OPENSSL_malloc(outlen), openssl_deleter);
-    // uint8_t* out = (uint8_t*)OPENSSL_malloc(outlen);
 
     if (!out.get()) {
         std::cerr << "OPENSSL_malloc failed" << std::endl;
