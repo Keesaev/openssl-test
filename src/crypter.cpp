@@ -14,7 +14,8 @@ crypter::crypter()
     size_t outlen, outlen1;
     size_t inlen = 5;
 
-    ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, nullptr);
+    EVP_PKEY* key;
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, nullptr);
 
     if (!EVP_PKEY_keygen_init(ctx)) {
         std::cerr << "EVP_PKEY_keygen_init failed" << std::endl;
@@ -24,12 +25,12 @@ crypter::crypter()
         std::cerr << "EVP_PKEY_generate failed" << std::endl;
         return;
     }
-    /*
+
     ctx = EVP_PKEY_CTX_new(key, nullptr);
     if (!ctx) {
         std::cerr << "EVP_PKEY_CTX_new failed" << std::endl;
         return;
-    }*/
+    }
     // https://www.openssl.org/docs/man3.0/man3/EVP_PKEY_encrypt.html
     auto encrypt = [&ctx, &key](const uint8_t* in, size_t inlen, uint8_t* out, size_t& outlen) {
         if (EVP_PKEY_encrypt_init(ctx) <= 0) {
@@ -54,14 +55,13 @@ crypter::crypter()
             return;
         }
 
-        if (EVP_PKEY_encrypt(ctx, out, &outlen, in, inlen) <= 0) {
+        if (EVP_PKEY_encrypt(ctx, (uint8_t*)out, &outlen, in, inlen) <= 0) {
             std::cerr << "EVP_PKEY_encrypt failed" << std::endl;
             return;
         }
         for (int i = 0; i < outlen; i++) {
             std::cout << (int)out[i] << ' ';
         }
-        // out = (uint8_t*)out_void;
     };
 
     // https://www.openssl.org/docs/man3.0/man3/EVP_PKEY_decrypt.html
@@ -80,18 +80,16 @@ crypter::crypter()
             std::cerr << "EVP_PKEY_encrypt failed" << std::endl;
             return;
         }
-        void* out_void = OPENSSL_malloc(outlen);
+        out = (uint8_t*)OPENSSL_malloc(outlen);
 
-        if (!out_void) {
+        if (!out) {
             std::cerr << "EVP_PKEY_encrypt failed" << std::endl;
             return;
         }
-        if (EVP_PKEY_decrypt(ctx, (uint8_t*)out_void, &outlen, in, inlen) <= 0) {
+        if (EVP_PKEY_decrypt(ctx, out, &outlen, in, inlen) <= 0) {
             std::cerr << "EVP_PKEY_encrypt failed" << std::endl;
             return;
         }
-
-        out = (uint8_t*)out_void;
     };
 
     encrypt(in, inlen, out, outlen);
