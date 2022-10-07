@@ -14,23 +14,14 @@ crypter::crypter()
     size_t outlen, outlen1;
     size_t inlen = 5;
 
-    EVP_PKEY* key;
-    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, nullptr);
+    EVP_PKEY* key = EVP_RSA_gen(1024);
 
-    if (!EVP_PKEY_keygen_init(ctx)) {
-        std::cerr << "EVP_PKEY_keygen_init failed" << std::endl;
-        return;
-    }
-    if (!EVP_PKEY_generate(ctx, &key)) {
-        std::cerr << "EVP_PKEY_generate failed" << std::endl;
-        return;
-    }
-
-    ctx = EVP_PKEY_CTX_new(key, nullptr);
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(key, nullptr);
     if (!ctx) {
         std::cerr << "EVP_PKEY_CTX_new failed" << std::endl;
         return;
     }
+
     // https://www.openssl.org/docs/man3.0/man3/EVP_PKEY_encrypt.html
     auto encrypt = [&ctx, &key](const uint8_t* in, size_t inlen, uint8_t* out, size_t& outlen) {
         if (EVP_PKEY_encrypt_init(ctx) <= 0) {
@@ -95,6 +86,9 @@ crypter::crypter()
     encrypt(in, inlen, out, outlen);
 
     std::cout << "OUTLEN " << outlen << std::endl;
+
+    return;
+
     for (int i = 0; i < outlen; i++) {
         std::cout << ((char*)out)[i] << std::endl;
     }
