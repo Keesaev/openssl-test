@@ -18,9 +18,7 @@ crypter::crypter()
 std::basic_string<uint8_t> crypter::encrypt(std::basic_string<uint8_t> const& in_str)
 {
     std::basic_string<uint8_t> out_str;
-    // TODO delete
-    size_t outlen, outlen1;
-    size_t inlen = 5;
+    size_t outlen;
 
     if (!_ctx) {
         std::cerr << "EVP_PKEY_CTX_new failed" << std::endl;
@@ -37,24 +35,29 @@ std::basic_string<uint8_t> crypter::encrypt(std::basic_string<uint8_t> const& in
     }
 
     /* Determine buffer length */
-    if (EVP_PKEY_encrypt(_ctx, NULL, &outlen, in_str.c_str(), inlen) <= 0) {
+    if (EVP_PKEY_encrypt(_ctx, NULL, &outlen, in_str.c_str(), in_str.size()) <= 0) {
         std::cerr << "EVP_PKEY_encrypt failed" << std::endl;
         return out_str;
     }
 
-    uint8_t* out = (uint8_t*)OPENSSL_malloc(outlen);
+    auto openssl_deleter = [](uint8_t* a) {
+        OPENSSL_free(a);
+    };
 
-    if (!out) {
+    auto out = std::unique_ptr<uint8_t, decltype(openssl_deleter)>((uint8_t*)OPENSSL_malloc(outlen), openssl_deleter);
+    // uint8_t* out = (uint8_t*)OPENSSL_malloc(outlen);
+
+    if (!out.get()) {
         std::cerr << "OPENSSL_malloc failed" << std::endl;
         return out_str;
     }
 
-    if (EVP_PKEY_encrypt(_ctx, (uint8_t*)out, &outlen, in_str.c_str(), inlen) <= 0) {
+    if (EVP_PKEY_encrypt(_ctx, out.get(), &outlen, in_str.c_str(), in_str.size()) <= 0) {
         std::cerr << "EVP_PKEY_encrypt failed" << std::endl;
         return out_str;
     }
 
-    out_str = std::basic_string<uint8_t>(out, outlen);
+    out_str = std::basic_string<uint8_t>(out.get(), outlen);
     return out_str;
 }
 
